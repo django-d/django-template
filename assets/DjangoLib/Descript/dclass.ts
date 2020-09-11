@@ -24,6 +24,7 @@ export interface DNode extends cc.Node {
     $Sprite: cc.Sprite;
     $Button: cc.Button;
     $Animation: cc.Animation;
+    $Camera: cc.Camera;
     $Toggle: cc.Toggle;
     $IToggle: IToggle;
     $ScrollView: cc.ScrollView;
