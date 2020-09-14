@@ -6,7 +6,7 @@ import { VM } from '../ModelView/ViewModel';
 const { ccclass, property } = cc._decorator;
 
 @ccclass
-export abstract class DComponent extends cc.Component{
+export abstract class DComponent extends cc.Component {
     /** clss name */
     static cname: string;
 
@@ -63,7 +63,7 @@ export abstract class DComponent extends cc.Component{
      * @param repeat
      * @param delay
      */
-    public ischedule(callback?: Function, interval?: number, repeat?: number, delay?: number, rightNow?: boolean) {
+    public iSchedule(callback?: Function, interval?: number, repeat?: number, delay?: number, rightNow?: boolean) {
         this.scheduleSeq++;
         this.ischedules.push({ callback, id: this.scheduleSeq });
         if (rightNow) callback();
@@ -76,7 +76,7 @@ export abstract class DComponent extends cc.Component{
      * @param id
      * @param callback
      */
-    public unischedule(id?: number, callback?: Function) {
+    public uniSchedule(id?: number, callback?: Function) {
         if (callback) {
             this.unschedule(callback);
         } else {
@@ -91,6 +91,14 @@ export abstract class DComponent extends cc.Component{
                 if (typeof index === 'number') this.ischedules.splice(index, 1);
             }
         }
+    }
+
+    public iScheduleOnce(delayTime) {
+        return new Promise((resolve, reject) => {
+            this.scheduleOnce(() => {
+                resolve();
+            }, delayTime || 0);
+        });
     }
 
     public binVMPath(path: string, onValueChanged: Function, target) {

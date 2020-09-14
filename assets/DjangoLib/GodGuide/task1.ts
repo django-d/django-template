@@ -5,19 +5,23 @@ export const task = {
     steps: [
         {
             desc: '文本提示',
-            command: { cmd: 'text', args: ['这里是新手引导'] },
+            command: { cmd: 'text', args: ['这里是新手引导', '点击主界面设置按钮'] },
         },
 
+        {
+            desc: '点击主界面主页按钮',
+            command: { cmd: 'finger', args: 'label' },
+            delayTime: 0.5,
+        },
+        {
+            desc: '文本提示',
+            command: { cmd: 'text', args: '点击主界面设置按钮' },
+        },
         {
             desc: '点击主界面主页按钮',
             command: { cmd: 'finger', args: 'New Button' },
             delayTime: 0.5,
         },
-
-        // {
-        //     desc: '文本提示',
-        //     command: { cmd: 'text', args: '点击主界面设置按钮' }
-        // },
 
         // {
         //     desc: '点击主界面设置按钮',

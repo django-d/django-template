@@ -95,19 +95,30 @@ export default class LoadGuide extends cc.Component {
         }
     }
 
-    runTask() {
+    async runTask() {
         // @ts-ignore
-        async.eachSeries(
-            this.tasks,
-            (taskFile, cb) => {
-                console.log('taskFile---------->', taskFile);
-                let { task } = require(taskFile);
-                this._godGuide.setTask(task);
-                this._godGuide.run(cb);
-            },
-            () => {
-                cc.log('任务全部完成');
-            },
-        );
+        // async.eachSeries(
+        //     this.tasks,
+        //     (taskFile, cb) => {
+        //         console.log('taskFile---------->', taskFile);
+        //         let { task } = require(taskFile);
+        //         this._godGuide.setTask(task);
+        //         this._godGuide.run(cb);
+        //     },
+        //     () => {
+        //         cc.log('任务全部完成');
+        //     },
+        // );
+
+        // 改造
+        for (let i = 0; i < this.tasks.length; i++) {
+            const t = this.tasks[i];
+            console.log('taskFile---------->', t);
+            let { task } = require(t);
+            this._godGuide.setTask(task);
+            await this._godGuide.run();
+        }
+
+        cc.log('任务全部完成');
     }
 }

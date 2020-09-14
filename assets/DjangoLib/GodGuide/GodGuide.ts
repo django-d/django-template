@@ -1,5 +1,7 @@
 import { GodCommand } from './GodCommand';
 import { Locator } from './Locator';
+import { DComponent } from '../Base/DComponent';
+import { dclass } from '../Descript/dclass';
 
 const RADIAN = (2 * Math.PI) / 360;
 
@@ -91,8 +93,8 @@ function touchSimulation(x, y) {
 }
 
 const { ccclass, property } = cc._decorator;
-@ccclass
-export default class GodGuide extends cc.Component {
+@dclass()
+export default class GodGuide extends DComponent {
     // @property(cc.Label)
     // label: cc.Label = null;
 
@@ -227,30 +229,43 @@ export default class GodGuide extends cc.Component {
         return this._task;
     }
 
-    run(callback?) {
+    async run() {
         if (!this._task) {
             return;
         }
         console.log('this._task.steps---------->', this._task.steps);
         // @ts-ignore
-        async.eachSeries(
-            this._task.steps,
-            (step, cb) => {
-                this._processStep(step, cb);
-            },
-            () => {
-                this._task = null;
-                cc.log('任务结束');
-                this._mask.node.active = false;
-                if (this._finger) {
-                    this._finger.active = false;
-                }
+        // async.eachSeries(
+        //     this._task.steps,
+        //     (step, cb) => {
+        //         this._processStep(step, cb);
+        //     },
+        //     () => {
+        //         this._task = null;
+        //         cc.log('任务结束');
+        //         this._mask.node.active = false;
+        //         if (this._finger) {
+        //             this._finger.active = false;
+        //         }
 
-                if (callback) {
-                    callback();
-                }
-            },
-        );
+        //         if (callback) {
+        //             callback();
+        //         }
+        //     },
+        // );
+
+        // 改造
+        for (let i = 0; i < this._task.steps.length; i++) {
+            const step = this._task.steps[i];
+            await this._processStep(step);
+        }
+
+        this._task = null;
+        cc.log('任务结束');
+        this._mask.node.active = false;
+        if (this._finger) {
+            this._finger.active = false;
+        }
     }
 
     fillPoints(points) {
@@ -264,49 +279,88 @@ export default class GodGuide extends cc.Component {
         this._mask._graphics.fill();
     }
 
-    _processStep(step, callback) {
+    async _processStep(step) {
         // @ts-ignore
-        async.series(
-            {
-                //任务开始
-                stepStart(cb) {
-                    if (step.onStart) {
-                        step.onStart(() => {
-                            cb();
-                        });
-                    } else {
-                        cb();
-                    }
-                },
+        // async.series(
+        //     {
+        //         //任务开始
+        //         stepStart(cb) {
+        //             if (step.onStart) {
+        //                 step.onStart(() => {
+        //                     cb();
+        //                 });
+        //             } else {
+        //                 cb();
+        //             }
+        //         },
 
-                //任务指令
-                stepCommand: cb => {
-                    this._mask.node.active = this._task.mask || true;
-                    this.scheduleOnce(() => {
-                        this._processStepCommand(step, () => {
-                            cb();
-                        });
-                    }, step.delayTime || 0);
-                },
+        //         //任务指令
+        //         stepCommand: cb => {
+        //             this._mask.node.active = this._task.mask || true;
+        //             this.scheduleOnce(() => {
+        //                 this._processStepCommand(step, () => {
+        //                     cb();
+        //                 });
+        //             }, step.delayTime || 0);
+        //         },
 
-                //任务结束
-                taskEnd: cb => {
-                    this._mask._graphics.clear();
-                    this._finger.active = false;
-                    if (step.onEnd) {
-                        step.onEnd(() => {
-                            cb();
-                        });
-                    } else {
-                        cb();
-                    }
-                },
-            },
-            error => {
-                this.log(`步骤【${step.desc}】结束！`);
-                callback();
-            },
-        );
+        //         //任务结束
+        //         taskEnd: cb => {
+        //             this._mask._graphics.clear();
+        //             this._finger.active = false;
+        //             if (step.onEnd) {
+        //                 step.onEnd(() => {
+        //                     cb();
+        //                 });
+        //             } else {
+        //                 cb();
+        //             }
+        //         },
+        //     },
+        //     error => {
+        //         this.log(`步骤【${step.desc}】结束！`);
+        //         callback();
+        //     },
+        // );
+        await this.stepStart(step);
+        await this.stepCommand(step);
+        await this.taskEnd(step);
+        this.log(`步骤【${step.desc}】结束！`);
+    }
+
+    //任务开始
+    async stepStart(step) {
+        return new Promise((resolve, reject) => {
+            if (step.onStart) {
+                step.onStart(() => {
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+        });
+    }
+
+    //任务指令
+    async stepCommand(step) {
+        this._mask.node.active = this._task.mask || true;
+        await this.iScheduleOnce(step.delayTime || 0);
+        await this._processStepCommand(step);
+    }
+
+    //任务结束
+    async taskEnd(step) {
+        return new Promise((resolve, reject) => {
+            this._mask._graphics.clear();
+            this._finger.active = false;
+            if (step.onEnd) {
+                step.onEnd(() => {
+                    resolve();
+                });
+            } else {
+                resolve();
+            }
+        });
     }
 
     /**
@@ -345,17 +399,14 @@ export default class GodGuide extends cc.Component {
      * @param {*} step
      * @param {*} cb
      */
-    _processStepCommand(step, cb) {
+    async _processStepCommand(step) {
         let cmd = GodCommand[step.command.cmd];
         if (cmd) {
             this.log(`执行步骤【${step.desc}】指令: ${step.command.cmd}`);
-            cmd(this, step, () => {
-                this.log(`步骤【${step.desc}】指令: ${step.command.cmd} 执行完毕`);
-                cb();
-            });
+            await cmd(this, step);
+            this.log(`步骤【${step.desc}】指令: ${step.command.cmd} 执行完毕`);
         } else {
             this.log(`执行步骤【${step.desc}】指令: ${step.command.cmd} 不存在！`);
-            cb();
         }
     }
 
@@ -512,10 +563,14 @@ export default class GodGuide extends cc.Component {
     }
 
     //显示文本
-    showText(text, callback) {
-        this._text.once('click', callback);
-        let godText = this._text.getComponent(this.TEXT_PREFAB.name);
-        godText.setText(text, callback);
+    async showText(text) {
+        return new Promise((resolve, reject) => {
+            this._text.once('click', () => {
+                resolve();
+            });
+            let godText = this._text.getComponent(this.TEXT_PREFAB.name);
+            godText.setText(text);
+        });
     }
 
     setAutorun() {
